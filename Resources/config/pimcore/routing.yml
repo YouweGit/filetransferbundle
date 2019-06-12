@@ -1,0 +1,5 @@
+file_transfer:
+    resource: "@FileTransferBundle/Controller/"
+    type:     annotation
+    prefix:   /
+

@@ -1,0 +1,5 @@
+file_transfer:
+    servers:
+        - { serverid: example_1_server_id, address: 127.0.0.1, username: example_1_username, password: example_1_password }
+        - { serverid: example_2_server_id, address: 127.0.0.1, username: example_2_username, password: example_2_password }
+# copy these lines to your pimcore app/config/config.yml and change them to match your real server configs
