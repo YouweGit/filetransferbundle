@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: user
- * Date: 21/05/2019
- * Time: 11:44
- */
 
 namespace FileTransferBundle\Service;
 
@@ -24,16 +18,10 @@ class FileTransferService
         $this->logger->setComponent('FileTransfer');
 
     }
-    
+
     public function transferFile($serverid, $sourcefile, $targetfile)
     {
-
-//        var_dump($this->config);
-//        var_dump($serverid);
-//        var_dump($sourcefile);
-//        var_dump($targetfile);
-
-        if(isset($this->config['servers'][$serverid])) {
+        if (isset($this->config['servers'][$serverid])) {
             $c = $this->config['servers'][$serverid];
             $address = $c['address'];
             $username = $c['username'];
@@ -44,14 +32,8 @@ class FileTransferService
             throw new \RuntimeException($e);
         }
 
-        // $sourcefile
-        // $targetfile
-        // $username
-        // $address
-        // $password
-
         $sftp = new SFTP($address);
-        if(!$sftp->login($username, $password)) {
+        if (!$sftp->login($username, $password)) {
             $e = "Sftp login failed for user " . $username;
             $this->logger->error($e);
             throw new \RuntimeException($e);
@@ -61,8 +43,8 @@ class FileTransferService
 
         $this->logger->debug("Sftp folder name is $sftpFolderName");
 
-        if(!$sftp->file_exists($sftpFolderName)){
-            if(!$sftp->mkdir($sftpFolderName, 0777)){
+        if (!$sftp->file_exists($sftpFolderName)) {
+            if (!$sftp->mkdir($sftpFolderName, 0777)) {
                 $e = "Can't create $sftpFolderName directory. " . $sftp->getLastSFTPError();
                 $this->logger->error($e);
                 throw new \RuntimeException($e);
@@ -71,13 +53,13 @@ class FileTransferService
             $this->logger->debug("Directory exists $sftpFolderName");
         }
 
-        if(!$sftp->chdir($sftpFolderName)){
+        if (!$sftp->chdir($sftpFolderName)) {
             $e = "Can't chdir to $sftpFolderName directory. " . $sftp->getLastSFTPError();
             $this->logger->error($e);
             throw new \RuntimeException($e);
         }
 
-        if(!$sftp->put($targetfile, $sourcefile, SFTP::SOURCE_LOCAL_FILE)){
+        if (!$sftp->put($targetfile, $sourcefile, SFTP::SOURCE_LOCAL_FILE)) {
             $e = "Couldn't send file to sftp. " . $sftp->getLastSFTPError();
             $this->logger->error($e);
             throw new \RuntimeException($e);
