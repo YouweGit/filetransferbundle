@@ -9,20 +9,5 @@ services:
         # if you need to do this, you can override this setting on individual services
         public: false
 
-    # controllers are imported separately to make sure they're public
-    # and have a tag that allows actions to type-hint services
-    FileTransferBundle\Controller\:
-        resource: '../../Controller'
-        public: true
-        tags: ['controller.service_arguments']
-
-
     FileTransferBundle\Service\FileTransferService:
         public: true
-
-# add more services, or override services that need manual wiring
-#    FileTransferBundle\ExampleClass:
-#        arguments:
-#            - "@service_id"
-#            - "plain_value"
-#            - "%parameter%"
