@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: user
- * Date: 21/05/2019
- * Time: 11:44
- */
 
 namespace FileTransferBundle\Service;
 
