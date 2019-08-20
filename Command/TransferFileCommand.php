@@ -40,16 +40,8 @@ class TransferFileCommand extends AbstractCommand
         $targetserverid = $input->getArgument('targetserverid');
 
         $service = $this->getContainer()->get('FileTransferBundle\Service\FileTransferService');
-//        $config = $this->getContainer()->getParameter('file_transfer_config');
-
-//        var_dump($config);
 
         $service->transferFile($targetserverid, $sourcefile, $targetfile);
-
-        // retrieve targetserver configuration from config
-
-        // sftp the source file to the target file
-
     }
 
 }
