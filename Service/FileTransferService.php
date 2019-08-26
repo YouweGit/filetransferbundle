@@ -4,7 +4,6 @@ namespace FileTransferBundle\Service;
 
 use phpseclib\Net\SFTP;
 use Pimcore\Log\ApplicationLogger;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class FileTransferService
 {
