@@ -43,6 +43,21 @@ class FileTransferService
 
         $this->logger->debug("Sftp folder name is $sftpFolderName");
 
+        $this->checkIfDirectoryExists($sftp, $sftpFolderName);
+
+        $this->changeToDirectory($sftpFolderName);
+
+        $this->putToServer($sftp, $targetfile, $sourcefile);
+    }
+
+    /**
+     * Checks if a directory remotely exists
+     *
+     * @param SFTP $sftp
+     * @param string $sftpFolderName
+     */
+    private function checkIfDirectoryExists(SFTP $sftp, string $sftpFolderName): void
+    {
         if (!$sftp->file_exists($sftpFolderName)) {
             if (!$sftp->mkdir($sftpFolderName, 0777)) {
                 $e = "Can't create $sftpFolderName directory. " . $sftp->getLastSFTPError();
@@ -52,14 +67,34 @@ class FileTransferService
         } else {
             $this->logger->debug("Directory exists $sftpFolderName");
         }
+    }
 
+    /**
+     * Change to the correct directory on the server
+     *
+     * @param SFTP $sftp
+     * @param string $targetFile
+     * @param string $sourceFile
+     */
+    private function changeToDirectory(SFTP $sftp, string $sftpFolderName): void
+    {
         if (!$sftp->chdir($sftpFolderName)) {
             $e = "Can't chdir to $sftpFolderName directory. " . $sftp->getLastSFTPError();
             $this->logger->error($e);
             throw new \RuntimeException($e);
         }
+    }
 
-        if (!$sftp->put($targetfile, $sourcefile, SFTP::SOURCE_LOCAL_FILE)) {
+    /**
+     * Upload the file to the server
+     *
+     * @param SFTP $sftp
+     * @param string $targetFile
+     * @param string $sourceFile
+     */
+    private function putToServer(SFTP $sftp, string $targetFile, string $sourceFile): void
+    {
+        if (!$sftp->put($targetFile, $sourceFile, SFTP::SOURCE_LOCAL_FILE)) {
             $e = "Couldn't send file to sftp. " . $sftp->getLastSFTPError();
             $this->logger->error($e);
             throw new \RuntimeException($e);
