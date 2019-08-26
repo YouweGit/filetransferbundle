@@ -1,0 +1,27 @@
+{
+  "name": "youwe/filetransferbundle",
+  "description": "pimcore sftp file transfer bundle",
+  "type": "pimcore-bundle",
+  "require": {
+    "pimcore/core-version": ">=5.1.0",
+    "phpseclib/phpseclib": "^2.0"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Youwe"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "FileTransferBundle\\": "/"
+    }
+  },
+  "extra": {
+    "pimcore": {
+      "bundles": [
+        "FileTransferBundle"
+      ]
+    }
+  }
+}
