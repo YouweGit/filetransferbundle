@@ -31,6 +31,11 @@ class TransferFileCommand extends AbstractCommand
                 'targetfile',
                 InputArgument::REQUIRED,
                 'target file')
+            ->addOption('method',
+                'm',
+                InputOption::VALUE_OPTIONAL,
+                "Determen if the service retreive files or push it to the server. Options: put,get",
+                FileTransferService::MODE_PUT)
             ;
 
     }
@@ -42,7 +47,9 @@ class TransferFileCommand extends AbstractCommand
         $targetfile = $input->getArgument('targetfile');
         $targetserverid = $input->getArgument('targetserverid');
 
+        /** @var FileTransferService $service */
         $service = $this->getContainer()->get('FileTransferBundle\Service\FileTransferService');
+        $service->setMode($input->getOption('method'));
 
         if ($this->useDirectoryMode($sourcefile)) {
             $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
