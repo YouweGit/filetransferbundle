@@ -11,9 +11,9 @@ class FileTransferService
     private $logger;
     private $config;
 
-    public function __construct(ApplicationLogger $logger, ContainerInterface $container)
+    public function __construct(array $parameters, ApplicationLogger $logger)
     {
-        $this->config = $container->getParameter('file_transfer_config');
+        $this->config = $parameters;
         $this->logger = $logger;
         $this->logger->setComponent('FileTransfer');
 

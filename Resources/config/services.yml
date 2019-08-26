@@ -11,3 +11,4 @@ services:
 
     FileTransferBundle\Service\FileTransferService:
         public: true
+        arguments: ["%file_transfer%"]
