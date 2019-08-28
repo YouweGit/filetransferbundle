@@ -1,204 +1,127 @@
 <?php
 
-namespace FileTransferBundle\Service;
+namespace FileTransferBundle\Command;
 
-use http\Exception\RuntimeException;
-use phpseclib\Net\SFTP;
+use FileTransferBundle\Service\FileTransferService;
+use Pimcore\Console\AbstractCommand;
+use Pimcore\Console\Dumper;
 use Pimcore\Log\ApplicationLogger;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
 
-class FileTransferService
+class TransferFileCommand extends AbstractCommand
 {
-    const MODE_PUT = 'put';
-    const MODE_GET = 'get';
-
-    private $logger;
-    private $config;
-    private $mode;
-
-    public function __construct(array $parameters, ApplicationLogger $logger)
+    protected function configure()
     {
-        $this->config = $parameters;
-        $this->logger = $logger;
-        $this->logger->setComponent('FileTransfer');
+        $this
+            ->setName('transfer:file')
+            ->setDescription('Transfer a file')
+            ->addArgument(
+                'targetserverid',
+                InputArgument::REQUIRED,
+                'target server identifier')
+            ->addArgument(
+                'sourcefile',
+                InputArgument::REQUIRED,
+                'source file')
+            ->addArgument(
+                'targetfile',
+                InputArgument::REQUIRED,
+                'target file')
+            ->addOption('method',
+                'm',
+                InputOption::VALUE_OPTIONAL,
+                "Determen if the service retreive files or push it to the server. Options: put,get",
+                FileTransferService::MODE_PUT)
+            ->addOption('ignore',
+                'i',
+                InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                '',
+                [])
+            ;
 
-        $this->mode = self::MODE_PUT;
     }
 
-    /**
-     * Set the mode where the service should be operating
-     *
-     * @param string $mode
-     */
-    public function setMode(string $mode = self::MODE_PUT):void
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->mode = $mode;
-    }
 
-    /**
-     * Returns the mode
-     *
-     * @return string
-     */
-    public function getMode()
-    {
-        return $this->mode;
-    }
+        $sourcefile = $input->getArgument('sourcefile');
+        $targetfile = $input->getArgument('targetfile');
+        $targetserverid = $input->getArgument('targetserverid');
 
-    public function getRemoteFiles($serverId, $source, $ignore = []): ?array
-    {
-        if ($this->mode === self::MODE_PUT) {
-            return null;
-        }
+        /** @var FileTransferService $service */
+        $service = $this->getContainer()->get('FileTransferBundle\Service\FileTransferService');
+        $service->setMode($input->getOption('method'));
 
-        $selectedFiles = [];
+        if ($service->getMode() === FileTransferService::MODE_GET) {
+            $files = $service->getRemoteFiles($targetserverid, '/PROD', $this->input->getOption('ignore', []));
 
-        $sftp = $this->loginInSftp($serverId);
-        $files = $sftp->nlist($source);
-
-        if (!$files) {
-            $e = "Directory can not be pulled from :" . $source;
-            $this->logger->error($e);
-        } else {
-            foreach ($files as $file) {
-
-                if (in_array($file, $ignore)) {
-                    continue;
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    $service->transferFile(
+                        $targetserverid, 
+                        $sourcefile . $file, 
+                        $targetfile . $file);
                 }
-
-                $selectedFiles[] = DIRECTORY_SEPARATOR . $file;
-            }
-        }
-
-        return $selectedFiles;
-    }
-
-    public function transferFile($serverid, $sourcefile, $targetfile)
-    {
-        $sftp = $this->loginInSftp($serverid);
-
-        $sftpFolderName = dirname($targetfile);
-
-        $this->logger->debug("Sftp folder name is $sftpFolderName");
-
-        $this->checkIfDirectoryExists($sftp, $sftpFolderName);
-
-        $this->changeToDirectory($sftp, $sftpFolderName);
-
-        switch ($this->mode) {
-            case FileTransferService::MODE_PUT:
-                $this->putToServer($sftp, $targetfile, $sourcefile);
-                break;
-            case FileTransferService::MODE_GET:
-                $this->getFromServer($sftp, $targetfile, $sourcefile);
-                break;
-            default:
-                throw new \RuntimeException("There is no mode selected please use -m or --method");
-                break;
-        }
-    }
-
-    /**
-     * Login in SFTP and give back the connection
-     *
-     * @return SFTP
-     */
-    private function loginInSftp(string $serverid)
-    {
-        list ($address, $username, $password) = $this->getCredentials($serverid);
-
-        $sftp = new SFTP($address);
-        if (!$sftp->login($username, $password)) {
-            $e = "Sftp login failed for user " . $username;
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
-        }
-
-        return $sftp;
-    }
-
-    /**
-     * @return array
-     */
-    private function getCredentials(string $serverid)
-    {
-        if (isset($this->config['servers'][$serverid])) {
-            $configure = $this->config['servers'][$serverid];
-
-            return [
-                $configure['address'],
-                $configure['username'],
-                $configure['password']
-            ];
-        } else {
-            $e = "Config not found for server id " . $serverid;
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
-        }
-    }
-    /**
-     * Checks if a directory remotely exists
-     *
-     * @param SFTP $sftp
-     * @param string $sftpFolderName
-     */
-    private function checkIfDirectoryExists(SFTP $sftp, string $sftpFolderName): void
-    {
-        if (!$sftp->file_exists($sftpFolderName)) {
-            if (!$sftp->mkdir($sftpFolderName, 0777)) {
-                $e = "Can't create $sftpFolderName directory. " . $sftp->getLastSFTPError();
-                $this->logger->error($e);
-                throw new \RuntimeException($e);
             }
         } else {
-            $this->logger->debug("Directory exists $sftpFolderName");
+            if ($this->useDirectoryMode($sourcefile)) {
+                $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
+            } else {
+                $service->transferFile($targetserverid, $sourcefile, $targetfile);
+            }
         }
     }
 
     /**
-     * Change to the correct directory on the server
+     * Checks if the transfer is in directory mode
      *
-     * @param SFTP $sftp
-     * @param string $targetFile
-     * @param string $sourceFile
+     * @param string $source
+     * @param string $target
+     * @return bool
      */
-    private function changeToDirectory(SFTP $sftp, string $sftpFolderName): void
+    private function useDirectoryMode(string $source): bool
     {
-        if (!$sftp->chdir($sftpFolderName)) {
-            $e = "Can't chdir to $sftpFolderName directory. " . $sftp->getLastSFTPError();
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
+        if (is_dir($source)) {
+            return true;
         }
+
+        return false;
     }
 
     /**
-     * Upload the file to the server
+     * Transfers the a complete directory to a remote server
      *
-     * @param SFTP $sftp
-     * @param string $targetFile
-     * @param string $sourceFile
+     * @param FileTransferService $service
+     * @param string $serverId
+     * @param string $source
+     * @param string $target
      */
-    private function putToServer(SFTP $sftp, string $targetFile, string $sourceFile): void
+    private function transferDirectory(FileTransferService $service, string $serverId, string $source, string $target): void
     {
-        if (!$sftp->put($targetFile, $sourceFile, SFTP::SOURCE_LOCAL_FILE)) {
-            $e = "Couldn't send file to sftp. " . $sftp->getLastSFTPError();
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
+        $finder = new Finder();
+        $finder->files()->in($source);
+
+        /** @var ApplicationLogger $logger */
+        $logger = $this->getContainer()->get('monolog.logger.admin');
+        if (!$finder->hasResults()) {
+            $logger->notice('no files found', [
+                'component' => 'FileTransfer'
+            ]);
+            return;
+        }
+
+        foreach ($finder as $file) {
+            $destination = $target . $file->getFilename();
+
+            $service->transferFile(
+                $serverId,
+                $file,
+                $destination);
         }
     }
 
-    /**
-     * Download the file from the remote server
-     *
-     * @param SFTP $sftp
-     * @param string $targetFile
-     * @param string $sourceFile
-     */
-    private function getFromServer(SFTP $sftp, string $targetFile, string $sourceFile): void
-    {
-        if (!$sftp->get($sourceFile, $targetFile)) {
-            $e = "Couldn't get file from sftp. " . $sftp->getLastSFTPError();
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
-        }
-    }
 }
