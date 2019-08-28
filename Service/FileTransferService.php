@@ -60,7 +60,7 @@ class FileTransferService
 
         $this->checkIfDirectoryExists($sftp, $sftpFolderName);
 
-        $this->changeToDirectory($sftpFolderName);
+        $this->changeToDirectory($sftp, $sftpFolderName);
 
         switch ($this->mode) {
             case FileTransferService::MODE_PUT:
