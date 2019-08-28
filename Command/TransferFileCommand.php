@@ -36,6 +36,11 @@ class TransferFileCommand extends AbstractCommand
                 InputOption::VALUE_OPTIONAL,
                 "Determen if the service retreive files or push it to the server. Options: put,get",
                 FileTransferService::MODE_PUT)
+            ->addOption('ignore',
+                'i',
+                InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                '',
+                [])
             ;
 
     }
@@ -51,6 +56,19 @@ class TransferFileCommand extends AbstractCommand
         $service = $this->getContainer()->get('FileTransferBundle\Service\FileTransferService');
         $service->setMode($input->getOption('method'));
 
+        if ($service->getMode() === FileTransferService::MODE_GET) {
+            $files = $service->getRemoteFiles($targetserverid, '/PROD', $this->input->getOption('ignore', []));
+            
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    $service->transferFile(
+                        $targetserverid, 
+                        $sourcefile . $file, 
+                        $targetfile . $file);
+                }
+            }
+        }
+        
         if ($this->useDirectoryMode($sourcefile)) {
             $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
         } else {
@@ -97,7 +115,7 @@ class TransferFileCommand extends AbstractCommand
         }
 
         foreach ($finder as $file) {
-            $destination = $target . DIRECTORY_SEPARATOR . $file->getFilename();
+            $destination = $target . $file->getFilename();
 
             $service->transferFile(
                 $serverId,

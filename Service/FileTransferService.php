@@ -34,25 +34,47 @@ class FileTransferService
         $this->mode = $mode;
     }
 
-    public function transferFile($serverid, $sourcefile, $targetfile)
+    /**
+     * Returns the mode
+     *
+     * @return string
+     */
+    public function getMode()
     {
-        if (isset($this->config['servers'][$serverid])) {
-            $c = $this->config['servers'][$serverid];
-            $address = $c['address'];
-            $username = $c['username'];
-            $password = $c['password'];
-        } else {
-            $e = "Config not found for server id " . $serverid;
-            $this->logger->error($e);
-            throw new \RuntimeException($e);
+        return $this->mode;
+    }
+
+    public function getRemoteFiles($serverId, $source, $ignore = []): ?array
+    {
+        if ($this->mode === self::MODE_PUT) {
+            return null;
         }
 
-        $sftp = new SFTP($address);
-        if (!$sftp->login($username, $password)) {
-            $e = "Sftp login failed for user " . $username;
+        $selectedFiles = [];
+
+        $sftp = $this->loginInSftp($serverId);
+        $files = $sftp->nlist($source);
+
+        if (!$files) {
+            $e = "Directory can not be pulled from :" . $source;
             $this->logger->error($e);
-            throw new \RuntimeException($e);
+        } else {
+            foreach ($files as $file) {
+
+                if (in_array($file, $ignore)) {
+                    continue;
+                }
+
+                $selectedFiles[] = DIRECTORY_SEPARATOR . $file;
+            }
         }
+
+        return $selectedFiles;
+    }
+
+    public function transferFile($serverid, $sourcefile, $targetfile)
+    {
+        $sftp = $this->loginInSftp($serverid);
 
         $sftpFolderName = dirname($targetfile);
 
@@ -75,6 +97,44 @@ class FileTransferService
         }
     }
 
+    /**
+     * Login in SFTP and give back the connection
+     *
+     * @return SFTP
+     */
+    private function loginInSftp(string $serverid)
+    {
+        list ($address, $username, $password) = $this->getCredentials($serverid);
+
+        $sftp = new SFTP($address);
+        if (!$sftp->login($username, $password)) {
+            $e = "Sftp login failed for user " . $username;
+            $this->logger->error($e);
+            throw new \RuntimeException($e);
+        }
+
+        return $sftp;
+    }
+
+    /**
+     * @return array
+     */
+    private function getCredentials(string $serverid)
+    {
+        if (isset($this->config['servers'][$serverid])) {
+            $configure = $this->config['servers'][$serverid];
+
+            return [
+                $configure['address'],
+                $configure['username'],
+                $configure['password']
+            ];
+        } else {
+            $e = "Config not found for server id " . $serverid;
+            $this->logger->error($e);
+            throw new \RuntimeException($e);
+        }
+    }
     /**
      * Checks if a directory remotely exists
      *
@@ -133,10 +193,10 @@ class FileTransferService
      * @param string $targetFile
      * @param string $sourceFile
      */
-    private function getFromServer(SFTP $sftp, string $targetFile, string $sourceFile):void
+    private function getFromServer(SFTP $sftp, string $targetFile, string $sourceFile): void
     {
-        if (!$sftp->get($targetFile, $sourceFile, SFTP::SOURCE_LOCAL_FILE)) {
-            $e = "Couldn't send file to sftp. " . $sftp->getLastSFTPError();
+        if (!$sftp->get($sourceFile, $targetFile)) {
+            $e = "Couldn't get file from sftp. " . $sftp->getLastSFTPError();
             $this->logger->error($e);
             throw new \RuntimeException($e);
         }
