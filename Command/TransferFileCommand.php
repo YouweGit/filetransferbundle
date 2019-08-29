@@ -57,8 +57,8 @@ class TransferFileCommand extends AbstractCommand
         $service->setMode($input->getOption('method'));
 
         if ($service->getMode() === FileTransferService::MODE_GET) {
-            $files = $service->getRemoteFiles($targetserverid, '/PROD', $this->input->getOption('ignore', []));
-            
+            $files = $service->getRemoteFiles($targetserverid, $sourcefile, $this->input->getOption('ignore', []));
+
             if (is_array($files)) {
                 foreach ($files as $file) {
                     $service->transferFile(
@@ -67,12 +67,15 @@ class TransferFileCommand extends AbstractCommand
                         $targetfile . $file);
                 }
             }
-        }
-        
-        if ($this->useDirectoryMode($sourcefile)) {
-            $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
+
         } else {
-            $service->transferFile($targetserverid, $sourcefile, $targetfile);
+
+            if ($this->useDirectoryMode($sourcefile)) {
+                $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
+            } else {
+                $service->transferFile($targetserverid, $sourcefile, $targetfile);
+            }
+
         }
     }
 

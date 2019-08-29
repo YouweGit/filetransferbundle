@@ -95,6 +95,9 @@ class FileTransferService
                 throw new \RuntimeException("There is no mode selected please use -m or --method");
                 break;
         }
+
+        $sftp->disconnect();
+
     }
 
     /**
@@ -111,7 +114,7 @@ class FileTransferService
             $e = "Sftp login failed for user " . $username;
             $this->logger->error($e);
             throw new \RuntimeException($e);
-        }
+        } 
 
         return $sftp;
     }
