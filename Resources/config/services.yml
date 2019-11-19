@@ -9,6 +9,15 @@ services:
         # if you need to do this, you can override this setting on individual services
         public: false
 
+    FileTransferBundle\Command\:
+        resource: '../../Command/*'
+        tags: ['console.command']
+
     FileTransferBundle\Service\FileTransferService:
         public: true
         arguments: ["%file_transfer%"]
+
+    file_transfer.command.transfer_file_command:
+        class: FileTransferBundle\Command\TransferFileCommand
+        arguments:
+            - '@FileTransferBundle\Service\FileTransferService'

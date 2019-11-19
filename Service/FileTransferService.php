@@ -114,7 +114,7 @@ class FileTransferService
             $e = "Sftp login failed for user " . $username;
             $this->logger->error($e);
             throw new \RuntimeException($e);
-        } 
+        }
 
         return $sftp;
     }
