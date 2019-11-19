@@ -44,7 +44,7 @@ class FileTransferService
         return $this->mode;
     }
 
-    public function getRemoteFiles($serverId, $source, $ignore = []): ?array
+    public function getRemoteFiles($serverId, $source, $ignore = [".", ".."]): ?array
     {
         if ($this->mode === self::MODE_PUT) {
             return null;
@@ -60,7 +60,6 @@ class FileTransferService
             $this->logger->error($e);
         } else {
             foreach ($files as $file) {
-
                 if (in_array($file, $ignore)) {
                     continue;
                 }
@@ -76,7 +75,7 @@ class FileTransferService
     {
         $sftp = $this->loginInSftp($serverid);
 
-        $sftpFolderName = dirname($targetfile);
+        $sftpFolderName = dirname($sourcefile);
 
         $this->logger->debug("Sftp folder name is $sftpFolderName");
 
@@ -97,7 +96,6 @@ class FileTransferService
         }
 
         $sftp->disconnect();
-
     }
 
     /**
@@ -114,7 +112,7 @@ class FileTransferService
             $e = "Sftp login failed for user " . $username;
             $this->logger->error($e);
             throw new \RuntimeException($e);
-        } 
+        }
 
         return $sftp;
     }
