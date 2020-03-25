@@ -13,11 +13,5 @@ services:
         resource: '../../Command/*'
         tags: ['console.command']
 
-    FileTransferBundle\Service\FileTransferService:
-        public: true
-        arguments: ["%file_transfer%"]
-
-    file_transfer.command.transfer_file_command:
-        class: FileTransferBundle\Command\TransferFileCommand
-        arguments:
-            - '@FileTransferBundle\Service\FileTransferService'
+    FileTransferBundle\Service\:
+        resource: '../../Service/*'

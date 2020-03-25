@@ -2,10 +2,10 @@
 
 namespace FileTransferBundle\Command;
 
-use FileTransferBundle\Service\FileTransferService;
+use FileTransferBundle\Service\FTPServiceBuilderInterface;
+use FileTransferBundle\Service\FTPServiceInterface;
 use Pimcore\Console\AbstractCommand;
-use Pimcore\Console\Dumper;
-use Pimcore\Log\ApplicationLogger;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -14,11 +14,32 @@ use Symfony\Component\Finder\Finder;
 
 class TransferFileCommand extends AbstractCommand
 {
+    /**
+     * Upload files to FTP server.
+     */
+    private const OPERATION_UPLOAD = 'put';
+    /**
+     * Download files from a FTP server.
+     */
+    private const OPERATION_DOWNLOAD = 'get';
+
+
     protected static $defaultName = 'transfer:file';
     /**
-     * @var FileTransferService
+     * @var FTPServiceBuilderInterface
      */
-    private $fileTransferService;
+    private $ftpServiceBuilder;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    public function __construct(FTPServiceBuilderInterface $ftpServiceBuilder, LoggerInterface $logger)
+    {
+        parent::__construct();
+        $this->ftpServiceBuilder = $ftpServiceBuilder;
+        $this->logger = $logger;
+    }
 
     protected function configure()
     {
@@ -43,56 +64,24 @@ class TransferFileCommand extends AbstractCommand
                 'method',
                 'm',
                 InputOption::VALUE_OPTIONAL,
-                "Determen if the service retreive files or push it to the server. Options: put,get",
-                FileTransferService::MODE_PUT
-            )
-            ->addOption(
-                'ignore',
-                'i',
-                InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-                '',
-                []
+                "Determine if the service retrieve files or push it to the server. Options: put,get",
+                self::OPERATION_UPLOAD
             );
-    }
-
-    /**
-     * TransferFileCommand constructor.
-     * @param FileTransferService $fileTransferService
-     */
-    public function __construct(FileTransferService $fileTransferService)
-    {
-        $this->fileTransferService = $fileTransferService;
-        parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $sourcefile = $input->getArgument('sourcefile');
-        $targetfile = $input->getArgument('targetfile');
-        $targetserverid = $input->getArgument('targetserverid');
+        $source = $input->getArgument('sourcefile');
+        $target = $input->getArgument('targetfile');
+        $serverId = $input->getArgument('targetserverid');
+        $method = $input->getOption('method');
 
+        $ftp = $this->ftpServiceBuilder->login($serverId);
 
-        /** @var FileTransferService $service */
-        $service = $this->fileTransferService;
-        $service->setMode($input->getOption('method'));
-
-        if ($service->getMode() === FileTransferService::MODE_GET) {
-            $files = $service->getRemoteFiles($targetserverid, $sourcefile, $this->input->getOption('ignore', []));
-            if (is_array($files)) {
-                foreach ($files as $file) {
-                    $service->transferFile(
-                        $targetserverid,
-                        $sourcefile.$file,
-                        $targetfile.$file
-                    );
-                }
-            }
-        } else {
-            if ($this->useDirectoryMode($sourcefile)) {
-                $this->transferDirectory($service, $targetserverid, $sourcefile, $targetfile);
-            } else {
-                $service->transferFile($targetserverid, $sourcefile, $targetfile);
-            }
+        if ($method === self::OPERATION_DOWNLOAD) {
+            $ftp->download($source, $target);
+        } elseif ($method === self::OPERATION_UPLOAD) {
+            $ftp->upload($source, $target);
         }
     }
 
@@ -107,18 +96,18 @@ class TransferFileCommand extends AbstractCommand
         if (is_dir($source)) {
             return true;
         }
+
         return false;
     }
 
     /**
      * Transfers the a complete directory to a remote server
-     * @param FileTransferService $service
-     * @param string              $serverId
-     * @param string              $source
-     * @param string              $target
+     * @param string $serverId
+     * @param string $source
+     * @param string $target
      */
     private function transferDirectory(
-        FileTransferService $service,
+        FTPServiceInterface $ftp,
         string $serverId,
         string $source,
         string $target
@@ -126,20 +115,19 @@ class TransferFileCommand extends AbstractCommand
         $finder = new Finder();
         $finder->files()->in($source);
 
-        /** @var ApplicationLogger $logger */
-        $logger = $this->getContainer()->get('monolog.logger.admin');
         if (!$finder->hasResults()) {
-            $logger->notice(
+            $this->logger->notice(
                 'no files found',
                 [
                     'component' => 'FileTransfer',
                 ]
             );
+
             return;
         }
         foreach ($finder as $file) {
-            $destination = $target.$file->getFilename();
-            $service->transferFile(
+            $destination = $target . $file->getFilename();
+            $ftp->transferFile(
                 $serverId,
                 $file,
                 $destination
