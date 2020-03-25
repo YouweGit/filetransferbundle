@@ -5,6 +5,8 @@ namespace FileTransferBundle\Service;
 use FileTransferBundle\Service\Exception\FTPLoginFailed;
 use FileTransferBundle\Service\Exception\MissingServerConfiguration;
 use phpseclib\Net\SFTP;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class FTPServiceBuilder implements FTPServiceBuilderInterface
@@ -13,10 +15,15 @@ class FTPServiceBuilder implements FTPServiceBuilderInterface
      * @var ParameterBagInterface
      */
     private $parameters;
+    /**
+     * @var ContainerInterface
+     */
+    private $container;
 
-    public function __construct(ParameterBagInterface $parameters)
+    public function __construct(ParameterBagInterface $parameters, ContainerInterface $container)
     {
         $this->parameters = $parameters;
+        $this->container = $container;
     }
 
     public function login(string $serverId): FTPServiceInterface
@@ -39,6 +46,6 @@ class FTPServiceBuilder implements FTPServiceBuilderInterface
             throw FTPLoginFailed::create($address, $username, $password);
         }
 
-        return new FTPService($sftp);
+        return new FTPService($sftp, $this->container->get(\Pimcore\Log\ApplicationLogger::class));
     }
 }

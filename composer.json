@@ -4,7 +4,7 @@
   "type": "pimcore-bundle",
   "require": {
     "phpseclib/phpseclib": "^2.0",
-    "pimcore/pimcore": ">=5.1.0"
+    "pimcore/pimcore": "^6.2"
   },
   "license": "MIT",
   "authors": [

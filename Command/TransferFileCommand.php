@@ -119,7 +119,7 @@ class TransferFileCommand extends AbstractCommand
             $this->logger->notice(
                 'no files found',
                 [
-                    'component' => 'FileTransfer',
+                    'component' => __NAMESPACE__,
                 ]
             );
 

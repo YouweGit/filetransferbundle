@@ -7,6 +7,7 @@ use FileTransferBundle\Service\Exception\FTPCommandFailed;
 use FileTransferBundle\Service\Exception\FTPTransferFileFailed;
 use FileTransferBundle\Service\Exception\UnableToCreateDirectory;
 use phpseclib\Net\SFTP;
+use Psr\Log\LoggerInterface;
 use Zend\Stdlib\ErrorHandler;
 
 class FTPService implements FTPServiceInterface
@@ -15,10 +16,15 @@ class FTPService implements FTPServiceInterface
      * @var SFTP
      */
     private $ftp;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
-    public function __construct(SFTP $ftp)
+    public function __construct(SFTP $ftp, LoggerInterface $logger)
     {
         $this->ftp = $ftp;
+        $this->logger = $logger;
     }
 
     public function download(string $remotePath, string $localPath): void
@@ -50,13 +56,22 @@ class FTPService implements FTPServiceInterface
                 if (!is_writable($localDirectory)) {
                     throw DirectoryIsNotWritable::createLocalDirectory($localDirectory);
                 }
-                if (!$this->ftp->get($remoteFile, $realLocalPath)) {
+                if ($this->ftp->get($remoteFile, $realLocalPath) === false) {
                     throw FTPTransferFileFailed::createDownloadFileFailed(
                         $remoteFile,
                         $realLocalPath,
-                        $this->ftp->getLastError()
+                        $this->ftp->getLastSFTPError() ?? ''
                     );
                 }
+                $this->logger->info(
+                    sprintf(
+                        'Successfully downloaded file from FTP server "%s": "%s" saved in "%s".',
+                        $this->ftp->host,
+                        $remoteFile,
+                        $realLocalPath
+                    ),
+                    ['component' => __NAMESPACE__]
+                );
             }
         }
     }
@@ -104,10 +119,10 @@ class FTPService implements FTPServiceInterface
                     throw DirectoryIsNotWritable::createRemoteDirectory($remoteDirectory);
                 }
                 if (!$this->ftp->put($realRemotePath, $localPath, SFTP::SOURCE_LOCAL_FILE)) {
-                    throw FTPTransferFileFailed::createDownloadFileFailed(
+                    throw FTPTransferFileFailed::createUploadFileFailed(
                         $localFile,
                         $realRemotePath,
-                        $this->ftp->getLastError()
+                        $this->ftp->getLastError() ?? ''
                     );
                 }
             }
@@ -118,12 +133,9 @@ class FTPService implements FTPServiceInterface
     {
         $files = $this->ftp->nlist($source, $recursive);
 
-        if (!$files) {
-            throw FTPCommandFailed::create('nlist', sprintf('"%s"', implode('", "', $this->ftp->getErrors())));
+        if ($files === false) {
+            throw FTPCommandFailed::create(sprintf('nlist(%s)', $source), $this->ftp->getLastSFTPError());
         }
-
-        $canonize = function ($name, \stdClass $file) {
-        };
 
         $files = array_map(
             function (string $file) use ($source) {
