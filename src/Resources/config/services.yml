@@ -21,6 +21,3 @@ services:
     parameter_bag:
         class: Symfony\Component\DependencyInjection\ParameterBag\ContainerBag
         factory: 'FileTransferBundle\ParameterBag\ParameterBagFactory'
-
-    Symfony\Component\DependencyInjection\ParameterBag\ContainerBag:
-        alias: '@service_container'

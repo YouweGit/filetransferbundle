@@ -4,14 +4,17 @@
 namespace FileTransferBundle\ParameterBag;
 
 
-use Symfony\Component\DependencyInjection\Container;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\FrozenParameterBag;
 
 class ParameterBag extends FrozenParameterBag
 {
+    /**
+     * @var Symfony\Component\DependencyInjection\Container
+     */
     private $container;
 
-    public function __construct(Container $container)
+    public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
     }
