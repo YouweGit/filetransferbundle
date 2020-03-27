@@ -9,9 +9,18 @@ services:
         # if you need to do this, you can override this setting on individual services
         public: false
 
+    FileTransferBundle\:
+        resource: '../../*'
+        exclude: '../../{Command,DependencyInjection,Resources,FileTransferBundle.php}'
+
     FileTransferBundle\Command\:
         resource: '../../Command/*'
         tags: ['console.command']
 
-    FileTransferBundle\Service\:
-        resource: '../../Service/*'
+#    Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface
+    parameter_bag:
+        class: Symfony\Component\DependencyInjection\ParameterBag\ContainerBag
+        factory: 'FileTransferBundle\ParameterBag\ParameterBagFactory'
+
+    Symfony\Component\DependencyInjection\ParameterBag\ContainerBag:
+        alias: '@service_container'
