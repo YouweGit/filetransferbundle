@@ -66,6 +66,13 @@ class TransferFileCommand extends AbstractCommand
                 InputOption::VALUE_OPTIONAL,
                 "Determine if the service retrieve files or push it to the server. Options: put,get",
                 self::OPERATION_UPLOAD
+            )
+            ->addOption(
+                'preservemodifiedtime',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'If source is a directory, preserve the modified time of its containing files',
+                false
             );
     }
 
@@ -75,11 +82,12 @@ class TransferFileCommand extends AbstractCommand
         $target = $input->getArgument('targetfile');
         $serverId = $input->getArgument('targetserverid');
         $method = $input->getOption('method');
+        $preserveModifiedTime = $input->getOption('preservemodifiedtime');
 
         $ftp = $this->ftpServiceBuilder->login($serverId);
 
         if ($method === self::OPERATION_DOWNLOAD) {
-            $ftp->download($source, $target);
+            $ftp->download($source, $target, $preserveModifiedTime);
         } elseif ($method === self::OPERATION_UPLOAD) {
             $ftp->upload($source, $target);
         }
