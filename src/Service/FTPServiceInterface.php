@@ -10,10 +10,11 @@ interface FTPServiceInterface
     /**
      * @param string $remotePath
      * @param string $localPath
+     * @param bool $preserveModifiedTime
      * @throws FTPCommandFailed
      * @throws FTPTransferFileFailed
      */
-    public function download(string $remotePath, string $localPath): void;
+    public function download(string $remotePath, string $localPath, bool $preserveModifiedTime): void;
 
     /**
      * @param string $localPath

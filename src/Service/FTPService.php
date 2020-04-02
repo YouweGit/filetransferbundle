@@ -21,7 +21,7 @@ class FTPService implements FTPServiceInterface
         $this->ftp = $ftp;
     }
 
-    public function download(string $remotePath, string $localPath): void
+    public function download(string $remotePath, string $localPath, bool $preserveModifiedTime): void
     {
         $remoteFiles = (array)$remotePath;
         if ($this->ftp->is_dir($remotePath)) {
@@ -30,7 +30,11 @@ class FTPService implements FTPServiceInterface
 
         foreach ($remoteFiles as $remoteFile) {
             if ($this->ftp->is_dir($remoteFile)) {
-                $this->download($remoteFile, rtrim($localPath, DIRECTORY_SEPARATOR) . $remoteFile);
+                $this->download(
+                    $remoteFile,
+                    rtrim($localPath, DIRECTORY_SEPARATOR) . $remoteFile,
+                    $preserveModifiedTime
+                );
             } else {
                 $realLocalPath = str_replace(
                     rtrim($remotePath, DIRECTORY_SEPARATOR),
@@ -38,6 +42,7 @@ class FTPService implements FTPServiceInterface
                     $remoteFile
                 );
                 $localDirectory = dirname($realLocalPath);
+
                 if (!file_exists($localDirectory)) {
                     try {
                         ErrorHandler::start();
@@ -56,6 +61,11 @@ class FTPService implements FTPServiceInterface
                         $realLocalPath,
                         $this->ftp->getLastError()
                     );
+                }
+
+                if ($preserveModifiedTime) {
+                    $originalFileModifiedTime = $this->ftp->filemtime($remoteFile);
+                    touch($realLocalPath, $originalFileModifiedTime);
                 }
             }
         }
