@@ -1,5 +1,10 @@
 **Pimcore FileTransferBundle**
 
+Description:
+
+Filetransferbundle transfer files from a source server to a target server,
+and provides several configuration options for the transfer.
+
 Install:
 
     composer require youwe/filetransferbundle
