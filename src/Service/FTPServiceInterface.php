@@ -11,7 +11,7 @@ interface FTPServiceInterface
      * @param string $remotePath
      * @param string $localPath
      * @param bool $preserveModifiedTime
-     * @param bool $disableFileSizeCheck
+     * @param bool $checkFileSize
      * @throws FTPCommandFailed
      * @throws FTPTransferFileFailed
      */
@@ -19,15 +19,15 @@ interface FTPServiceInterface
         string $remotePath,
         string $localPath,
         bool $preserveModifiedTime,
-        bool $disableFileSizeCheck
+        bool $checkFileSize
     ): void;
 
     /**
      * @param string $localPath
      * @param string $remotePath
-     * @param bool $disableFileSizeCheck
+     * @param bool $checkFileSize
      * @throws FTPCommandFailed
      * @throws FTPTransferFileFailed
      */
-    public function upload(string $localPath, string $remotePath, bool $disableFileSizeCheck): void;
+    public function upload(string $localPath, string $remotePath, bool $checkFileSize): void;
 }

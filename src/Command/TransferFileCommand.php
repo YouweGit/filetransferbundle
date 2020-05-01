@@ -90,7 +90,7 @@ class TransferFileCommand extends AbstractCommand
         $serverId = $input->getArgument('targetserverid');
         $method = $input->getOption('method');
         $preserveModifiedTime = $input->getOption('preservemodifiedtime');
-        $disableFileSizeCheck = $input->getOption('disablesizecheck');
+        $disableFileSizeCheck = !($input->getOption('disablesizecheck'));
 
         $ftp = $this->ftpServiceBuilder->login($serverId);
 
