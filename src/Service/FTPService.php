@@ -22,8 +22,12 @@ class FTPService implements FTPServiceInterface
         $this->ftp = $ftp;
     }
 
-    public function download(string $remotePath, string $localPath, bool $preserveModifiedTime): void
-    {
+    public function download(
+        string $remotePath,
+        string $localPath,
+        bool $preserveModifiedTime,
+        bool $disableFileSizeCheck
+    ): void {
         $remoteFiles = (array)$remotePath;
         if ($this->ftp->is_dir($remotePath)) {
             $remoteFiles = $this->ls($remotePath, true);
@@ -34,7 +38,8 @@ class FTPService implements FTPServiceInterface
                 $this->download(
                     $remoteFile,
                     rtrim($localPath, DIRECTORY_SEPARATOR) . $remoteFile,
-                    $preserveModifiedTime
+                    $preserveModifiedTime,
+                    $disableFileSizeCheck
                 );
             } else {
                 $realLocalPath = str_replace(
@@ -64,12 +69,7 @@ class FTPService implements FTPServiceInterface
                     );
                 }
 
-                $sizeRemote = $this->ftp->size($remoteFile);
-                $sizeLocal = filesize($realLocalPath);
-
-                if ($sizeRemote !== $sizeLocal) {
-                    throw NonMatchingFileSize::create($sizeRemote, $sizeLocal);
-                }
+                $this->checkSize($disableFileSizeCheck, $remoteFile, $realLocalPath);
 
                 if ($preserveModifiedTime) {
                     $originalFileModifiedTime = $this->ftp->filemtime($remoteFile);
@@ -82,7 +82,7 @@ class FTPService implements FTPServiceInterface
     /**
      * @inheritDoc
      */
-    public function upload(string $localPath, string $remotePath): void
+    public function upload(string $localPath, string $remotePath, bool $disableFileSizeCheck): void
     {
         $localFiles = (array)$localPath;
         if (is_dir($localPath)) {
@@ -101,7 +101,7 @@ class FTPService implements FTPServiceInterface
 
         foreach ($localFiles as $localFile) {
             if (is_dir($localFile)) {
-                $this->upload($localFile, rtrim($remotePath, DIRECTORY_SEPARATOR) . $localFile);
+                $this->upload($localFile, rtrim($remotePath, DIRECTORY_SEPARATOR) . $localFile, $disableFileSizeCheck);
             } else {
                 $realRemotePath = str_replace(
                     rtrim($localPath, DIRECTORY_SEPARATOR),
@@ -128,6 +128,8 @@ class FTPService implements FTPServiceInterface
                         $this->ftp->getLastError()
                     );
                 }
+
+                $this->checkSize($disableFileSizeCheck, $realRemotePath, $localPath);
             }
         }
     }
@@ -155,5 +157,21 @@ class FTPService implements FTPServiceInterface
         sort($files);
 
         return $files;
+    }
+
+    /**
+     * @param bool $disableFileSizeCheck
+     * @param $remoteFile
+     * @param $realLocalPath
+     * @throws NonMatchingFileSize
+     */
+    public function checkSize(bool $disableFileSizeCheck, $remoteFile, $realLocalPath): void
+    {
+        $sizeRemote = $this->ftp->size($remoteFile);
+        $sizeLocal = filesize($realLocalPath);
+
+        if (!$disableFileSizeCheck && $sizeRemote !== $sizeLocal) {
+            throw NonMatchingFileSize::create($sizeRemote, $sizeLocal);
+        }
     }
 }

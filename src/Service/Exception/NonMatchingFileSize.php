@@ -6,10 +6,10 @@ namespace FileTransferBundle\Service\Exception;
 
 class NonMatchingFileSize extends \Exception
 {
-    public static function create(int $remoteFileSize, int $localFileSize)
+    public static function create(int $remoteFileSize, int $localFileSize): self
     {
         return new self(
-            sprintf("Remote file size and local file size don't match (%d) from remote and (%d) from local", $remoteFileSize, $localFileSize)
+            sprintf('The download file size is diferent from the remote file size. Remote file has "%d" bytes, and the local file has "%d" bytes.', $remoteFileSize, $localFileSize)
         );
     }
 }
