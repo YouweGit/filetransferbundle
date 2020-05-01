@@ -63,6 +63,17 @@ class FTPService implements FTPServiceInterface
                     );
                 }
 
+                $sizeRemote = $this->ftp->size($remoteFile);
+                $sizeLocal = filesize($realLocalPath);
+
+                if ($sizeRemote !== $sizeLocal) {
+                    throw FTPTransferFileFailed::createDownloadFileFailed(
+                        $remoteFile,
+                        $realLocalPath,
+                        "Remote file size and local file size don't match ($sizeRemote) from remote and ($sizeLocal) from local"
+                    );
+                }
+
                 if ($preserveModifiedTime) {
                     $originalFileModifiedTime = $this->ftp->filemtime($remoteFile);
                     touch($realLocalPath, $originalFileModifiedTime);
