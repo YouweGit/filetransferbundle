@@ -73,6 +73,13 @@ class TransferFileCommand extends AbstractCommand
                 InputOption::VALUE_OPTIONAL,
                 'If source is a directory, preserve the modified time of its containing files',
                 false
+            )
+            ->addOption(
+                'disablesizecheck',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Disable file size checking between remote and local',
+                false
             );
     }
 
@@ -83,13 +90,14 @@ class TransferFileCommand extends AbstractCommand
         $serverId = $input->getArgument('targetserverid');
         $method = $input->getOption('method');
         $preserveModifiedTime = $input->getOption('preservemodifiedtime');
+        $disableFileSizeCheck = $input->getOption('disablesizecheck');
 
         $ftp = $this->ftpServiceBuilder->login($serverId);
 
         if ($method === self::OPERATION_DOWNLOAD) {
-            $ftp->download($source, $target, $preserveModifiedTime);
+            $ftp->download($source, $target, $preserveModifiedTime, $disableFileSizeCheck);
         } elseif ($method === self::OPERATION_UPLOAD) {
-            $ftp->upload($source, $target);
+            $ftp->upload($source, $target, $disableFileSizeCheck);
         }
     }
 
