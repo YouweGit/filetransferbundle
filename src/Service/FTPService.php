@@ -5,6 +5,7 @@ namespace FileTransferBundle\Service;
 use FileTransferBundle\Service\Exception\DirectoryIsNotWritable;
 use FileTransferBundle\Service\Exception\FTPCommandFailed;
 use FileTransferBundle\Service\Exception\FTPTransferFileFailed;
+use FileTransferBundle\Service\Exception\NonMatchingFileSize;
 use FileTransferBundle\Service\Exception\UnableToCreateDirectory;
 use phpseclib\Net\SFTP;
 use Zend\Stdlib\ErrorHandler;
@@ -67,11 +68,7 @@ class FTPService implements FTPServiceInterface
                 $sizeLocal = filesize($realLocalPath);
 
                 if ($sizeRemote !== $sizeLocal) {
-                    throw FTPTransferFileFailed::createDownloadFileFailed(
-                        $remoteFile,
-                        $realLocalPath,
-                        "Remote file size and local file size don't match ($sizeRemote) from remote and ($sizeLocal) from local"
-                    );
+                    throw NonMatchingFileSize::create($sizeRemote, $sizeLocal);
                 }
 
                 if ($preserveModifiedTime) {
