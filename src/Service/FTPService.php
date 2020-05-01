@@ -165,7 +165,7 @@ class FTPService implements FTPServiceInterface
      * @param $realLocalPath
      * @throws NonMatchingFileSize
      */
-    public function checkSize(bool $disableFileSizeCheck, $remoteFile, $realLocalPath): void
+    public function checkSize(bool $disableFileSizeCheck, string $remoteFile, string $realLocalPath): void
     {
         $sizeRemote = $this->ftp->size($remoteFile);
         $sizeLocal = filesize($realLocalPath);
