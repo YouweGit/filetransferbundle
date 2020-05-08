@@ -20,4 +20,4 @@ services:
 #    Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface
     parameter_bag:
         class: Symfony\Component\DependencyInjection\ParameterBag\ContainerBag
-        factory: '@FileTransferBundle\ParameterBag\ParameterBagFactory'
+        factory: ['@FileTransferBundle\ParameterBag\ParameterBagFactory', 'create']
