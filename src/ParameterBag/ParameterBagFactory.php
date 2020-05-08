@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\FrozenParameterBag;
 
 class ParameterBagFactory
 {
-    public function __invoke(ContainerInterface $container)
+    public function create(ContainerInterface $container)
     {
         if (class_exists('\Symfony\Component\DependencyInjection\ParameterBag\ContainerBag')) {
             $bag = new \Symfony\Component\DependencyInjection\ParameterBag\ContainerBag($container);
@@ -21,5 +21,4 @@ class ParameterBagFactory
 
         return $bag;
     }
-
 }
