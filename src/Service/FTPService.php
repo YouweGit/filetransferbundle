@@ -6,6 +6,7 @@ use FileTransferBundle\Service\Exception\DirectoryIsNotWritable;
 use FileTransferBundle\Service\Exception\FTPCommandFailed;
 use FileTransferBundle\Service\Exception\FTPTransferFileFailed;
 use FileTransferBundle\Service\Exception\NonMatchingFileSize;
+use FileTransferBundle\Service\Exception\RemoveFileFailed;
 use FileTransferBundle\Service\Exception\UnableToCreateDirectory;
 use phpseclib\Net\SFTP;
 use Zend\Stdlib\ErrorHandler;
@@ -26,7 +27,8 @@ class FTPService implements FTPServiceInterface
         string $remotePath,
         string $localPath,
         bool $preserveModifiedTime,
-        bool $checkFileSize
+        bool $checkFileSize,
+        bool $removeFromSource
     ): void {
         $remoteFiles = (array)$remotePath;
         if ($this->ftp->is_dir($remotePath)) {
@@ -39,7 +41,8 @@ class FTPService implements FTPServiceInterface
                     $remoteFile,
                     rtrim($localPath, DIRECTORY_SEPARATOR) . $remoteFile,
                     $preserveModifiedTime,
-                    $checkFileSize
+                    $checkFileSize,
+                    $removeFromSource
                 );
             } else {
                 $realLocalPath = str_replace(
@@ -74,6 +77,15 @@ class FTPService implements FTPServiceInterface
                 if ($preserveModifiedTime) {
                     $originalFileModifiedTime = $this->ftp->filemtime($remoteFile);
                     touch($realLocalPath, $originalFileModifiedTime);
+                }
+
+                if ($removeFromSource) {
+                    if (!$this->ftp->delete($remoteFile)) {
+                        throw RemoveFileFailed::createRemoveFileFromRemoteFailed(
+                            $remoteFile,
+                            $this->ftp->getLastError()
+                        );
+                    }
                 }
             }
         }

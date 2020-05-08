@@ -80,6 +80,12 @@ class TransferFileCommand extends AbstractCommand
                 InputOption::VALUE_OPTIONAL,
                 'Disable file size checking between remote and local',
                 false
+            )
+            ->addOption(
+                'removefromsource',
+                null,
+                InputOption::VALUE_NONE,
+                'Remove files from the source server, after they are transferred over'
             );
     }
 
@@ -91,11 +97,12 @@ class TransferFileCommand extends AbstractCommand
         $method = $input->getOption('method');
         $preserveModifiedTime = $input->getOption('preservemodifiedtime');
         $disableFileSizeCheck = !($input->getOption('disablesizecheck'));
+        $removeFromSource = $input->getOption('removefromsource');
 
         $ftp = $this->ftpServiceBuilder->login($serverId);
 
         if ($method === self::OPERATION_DOWNLOAD) {
-            $ftp->download($source, $target, $preserveModifiedTime, $disableFileSizeCheck);
+            $ftp->download($source, $target, $preserveModifiedTime, $disableFileSizeCheck, $removeFromSource);
         } elseif ($method === self::OPERATION_UPLOAD) {
             $ftp->upload($source, $target, $disableFileSizeCheck);
         }
