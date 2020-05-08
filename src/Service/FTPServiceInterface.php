@@ -12,14 +12,14 @@ interface FTPServiceInterface
      * @param string $localPath
      * @param bool $preserveModifiedTime
      * @param bool $checkFileSize
-     * @throws FTPCommandFailed
-     * @throws FTPTransferFileFailed
+     * @param bool $removeFromSource
      */
     public function download(
         string $remotePath,
         string $localPath,
         bool $preserveModifiedTime,
-        bool $checkFileSize
+        bool $checkFileSize,
+        bool $removeFromSource
     ): void;
 
     /**
